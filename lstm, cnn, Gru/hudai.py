@@ -35,27 +35,21 @@ test_df['label'] = test_df['label'].astype(int)
 # Define stopwords for Bangla language
 stop_words = set(["আমি", "তুমি", "সে", "তিনি", "আমাদের", "তোমাদের", "তারা", "তাঁরা", "যার", "কে", "কেন", "কিভাবে", "কি", "কোথায়", "কখন", "কত", "কোন", "এবং", "অথবা", "তবে", "কিন্তু", "অবশ্য", "যদি", "হয়", "হয়ে", "ছিল", "হয়েছিল", "ছিলেন", "হয়েছিলেন", "থাকে", "থাকা", "থাকতে", "থাকবে", "থাকার", "থাকারে", "থাকারা", "থাকত", "পর্যন্ত", "যেহেতু", "কারণ", "অর্থাৎ", "উপর", "নিচে", "পেছনে", "আগে", "পরে", "প্রতি", "প্রথম", "দ্বিতীয়", "তৃতীয়", "একটি", "দুটি", "তিনটি", "চারটি", "পাঁচটি"])
 
-# Combine text and stopwords for TF-IDF vectorization
-train_text = train_df['text'].apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
-test_text = test_df['text'].apply(lambda x: ' '.join([word for word in x.split() if word not in stop_words]))
-
-
+# Tokenize text and convert to sequences
+tokenizer = Tokenizer()
+tokenizer.fit_on_texts(train_df['text'])
+X_train_seq = tokenizer.texts_to_sequences(train_df['text'])
+X_test_seq = tokenizer.texts_to_sequences(test_df['text'])
 
 # Remove stopwords from the tokenized text
-X_train = [[word_index for word_index in seq if word_index not in stop_words] for seq in X_train]
-X_test = [[word_index for word_index in seq if word_index not in stop_words] for seq in X_test]
+X_trai_seq = [[word_index for word_index in seq if word_index not in stop_words] for seq in X_train_seq]
+X_tes_seq = [[word_index for word_index in seq if word_index not in stop_words] for seq in X_test_seq]
 
 # Vectorize text using TF-IDF
 from sklearn.feature_extraction.text import TfidfVectorizer
 tfidf_vectorizer = TfidfVectorizer()
 X_train_tfidf = tfidf_vectorizer.fit_transform(train_text)
 X_test_tfidf = tfidf_vectorizer.transform(test_text)
-
-# Tokenize text and convert to sequences
-tokenizer = Tokenizer()
-tokenizer.fit_on_texts(train_df['text'])
-X_train_seq = tokenizer.texts_to_sequences(train_df['text'])
-X_test_seq = tokenizer.texts_to_sequences(test_df['text'])
 
 # Padding sequences
 max_sequence_length_train = max([len(seq) for seq in X_train_seq])
@@ -299,3 +293,35 @@ plt.show()
 print("LSTM Accuracy Score:", accuracy_score(test_df['label'], lstm_y_pred))
 print("CNN Accuracy Score:", accuracy_score(test_df['label'], cnn_y_pred))
 print("GRU Accuracy Score:", accuracy_score(test_df['label'], gru_y_pred))
+
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+# Generate confusion matrices for each model
+lstm_conf_matrix = confusion_matrix(test_df['label'], lstm_y_pred)
+cnn_conf_matrix = confusion_matrix(test_df['label'], cnn_y_pred)
+gru_conf_matrix = confusion_matrix(test_df['label'], gru_y_pred)
+
+# Plotting confusion matrices
+fig, axs = plt.subplots(1, 3, figsize=(18, 6))
+
+# LSTM confusion matrix
+sns.heatmap(lstm_conf_matrix, annot=True, fmt='d', ax=ax[0], cmap='Blues')
+axs[0].set_title('LSTM Confusion Matrix')
+axs[0].set_xlabel('Predicted Labels')
+axs[0].set_ylabel('True Labels')
+
+# CNN confusion matrix
+sns.heatmap(cnn_conf_matrix, annot=True, fmt='d', ax=ax[1], cmap='Blues')
+axs[1].set_title('CNN Confusion Matrix')
+axs[1].set_xlabel('Predicted Labels')
+axs[1].set_ylabel('True Labels')
+
+# GRU confusion matrix
+sns.heatmap(gru_conf_matrix, annot=True, fmt='d', ax=ax[2], cmap='Blues')
+axs[2].set_title('GRU Confusion Matrix')
+axs[2].set_xlabel('Predicted Labels')
+axs[2].set_ylabel('True Labels')
+
+plt.tight_layout()
+plt.show()
